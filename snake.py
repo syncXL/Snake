@@ -120,10 +120,10 @@ class Snake():
         newCoord = [0,0]
         if not exceedBDR[0]:
             newCoord[0] = self.reflect(x,1300)
-            newCoord[1] = self.point[1]
+            newCoord[1] = y
             self.reflectorPoint[n] = tuple(newCoord)
         elif not exceedBDR[1]:
-            newCoord[0] = self.point[0]
+            newCoord[0] = x
             newCoord[1] = self.reflect(y,700)
             self.reflectorPoint[n] = tuple(newCoord)
         n+=1
@@ -140,13 +140,13 @@ class Snake():
         if n!= len(self.snakePoints):
             self.resetter(n)
     def chDirection(self,dir,booL):
-        if dir is 'N' or 'S':
+        if dir == 'N' or dir == 'S':
             vAxis = self.getTurnedPoint(self.snakePoints[0][1]/100,booL) *100
             if vAxis >=700 or vAxis <0:
                 vAxis = self.getTurnedPoint(self.reflectorPoint[0][1]/100,booL)*100
         else:
             vAxis = self.getTurnedPoint(self.snakePoints[0][0]/100,booL) *100
-            if vAxis < 0 or vAxis >=1300:
+            if vAxis >=1300 or vAxis<0:
                 vAxis = self.getTurnedPoint(self.reflectorPoint[0][0]/100,booL) *100
         return vAxis
     def getTurnedPoint(self,value,booL):
@@ -175,10 +175,10 @@ class Snake():
             initDir = self.snakeDirection[0][0]
             if initDir == 'S'or initDir == 'E':
                 booL = 1
-            if dir[0] is 'N' or 'S':
-                temp = (self.snakePoints[0][0],self.chDirection(dir[0],booL))
+            if initDir == 'N' or initDir == 'S':
+                temp = (self.snakePoints[0][0],self.chDirection(initDir,booL))
             else:
-                temp = (self.chDirection(dir[0],booL),self.snakePoints[0][1])
+                temp = (self.chDirection(initDir,booL),self.snakePoints[0][1])
             if self.addTurn(temp):
                 self.turningPoint.append(temp)
                 self.turnActive.append(dir)
