@@ -1,4 +1,11 @@
-import math
-num=(0,8)
-numm=(2,7)
-print(math.floor(0.9))
+import math,time
+stop = (3,4)
+start = {
+    'N' : stop
+}
+# stop = (-3,-4)
+# print(abs(stop[0]))
+# for i in range (1,2):
+#     print('MOTHAFUCKA')
+# print(time.perf_counter()-start)
+print(round(0.49,1))
