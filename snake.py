@@ -1,4 +1,6 @@
 import pygame,random,math,time
+import matplotlib.pyplot as plt
+# from pylab import show
 
 pygame.init()
 ScreenFeatures = {
@@ -63,7 +65,7 @@ class Background():
             screen.blit(self.backgroundImage,i)
 class Snake():
     def __init__(self):
-        self.speed = 1
+        self.speed = 4
         self.directions = [('N',(0,-1)),('S',(0,1)),('E',(1,0)),('W',(-1,0))]
         self.snakeCP = random.choice(self.directions)
         self.point = (random.randrange(300,1000,100),random.randrange(300,500,100))
@@ -73,7 +75,9 @@ class Snake():
         self.centerPoints = [(0,0) for i in range(3)]
         self.turningPoint = []
         self.turnActive = []
+        self.turnQueue = []
         self.bodyCount = 1
+        self.initSpeed=0
         self.init2()
     def init2(self,n=1):
         if n != len(self.snakeDirection):
@@ -94,33 +98,36 @@ class Snake():
         pygame.draw.rect(screen,darkBlue,rect)
     def spawn(self,n = 0):
         self.draw_shapes(n,self.snakePoints)
-        if False in self.boundaryChk(self.snakePoints[n]):
+        if False in self.boundaryChk(self.snakePoints[n],self.snakeDirection[n][0]):
             self.draw_shapes(n,self.reflectorPoint)
         n+=1
         if n!=len(self.snakePoints):
             self.spawn(n)
     def mechanics(self):
         self.spawn()
+        self.eat()
         self.collided()
         self.reflector()
         self.resetter()
         self.turnRest()
-        self.eat()
         self.move()
     def collided(self):
         if detectCollision(self.snakePoints[0],self.snakePoints[2:len(self.snakePoints)+1],[100]):
             self.speed =0
+        if self.boundaryChk(self.snakePoints[0],self.snakeDirection[0][0]):
+            if detectCollision(self.reflectorPoint[0],self.snakePoints[2:len(self.snakePoints)+1],[100]):
+                self.speed =0
     def draw_shapes(self,n,CoordList):
         if n == 0:
             self.head(CoordList[n])
         else:
             self.body(CoordList[n])
             self.centerPoints[n] = getCenter(self.snakePoints[n],100)
-    def boundaryChk(self,coOrd):
+    def boundaryChk(self,coOrd,dir):
         boundaryBool = [True,True]
-        if coOrd[0] < 0 or coOrd[0]>= 1200:
+        if (coOrd[0] < 0 and dir == 'W') or (coOrd[0] >= 1200 and dir == 'E'):
             boundaryBool[0]=False
-        elif coOrd[1] <0 or coOrd[1]>=600:
+        elif (coOrd[1] <0 and dir == 'N') or (coOrd[1]>=600 and dir== 'S'):
             boundaryBool[1]=False
         return boundaryBool
     def reflect(self,coOrd,boundary):
@@ -128,16 +135,14 @@ class Snake():
             return coOrd - boundary
         return coOrd + boundary
     def reflector(self,n=0):
-        exceedBDR = self.boundaryChk(self.snakePoints[n])
+        exceedBDR = self.boundaryChk(self.snakePoints[n],self.snakeDirection[n][0])
         x = self.snakePoints[n][0]
         y = self.snakePoints[n][1]
-        newCoord = [0,0]
+        newCoord = [x,y]
         if not exceedBDR[0]:
             newCoord[0] = self.reflect(x,1300)
-            newCoord[1] = y
             self.reflectorPoint[n] = tuple(newCoord)
         elif not exceedBDR[1]:
-            newCoord[0] = x
             newCoord[1] = self.reflect(y,700)
             self.reflectorPoint[n] = tuple(newCoord)
         n+=1
@@ -167,18 +172,35 @@ class Snake():
         else:
             return math.floor(value)
     def turnRest(self):
-        for i,k in enumerate(self.turnActive):
-            pygame.draw.line(screen,darkBlue,self.turningPoint[i],self.turningPoint[i])
-            for j in range(len(self.snakeDirection)):
-                if k !=self.snakeDirection[j] and round(getDist(self.snakePoints[j],self.turningPoint[i])) == self.speed:
-                    self.snakeDirection[j] = k
-                    self.snakePoints[j] = self.turningPoint[i]
-                    if j == len(self.snakeDirection)-1:
-                        self.turnActive.pop(i)
-                        self.turningPoint.pop(i)
+        toRemove = []
+        for i in range(len(self.turnActive)):
+            snakeBody =  self.turnQueue[i]
+            if getDist(self.snakePoints[snakeBody],self.turningPoint[i]) <= self.speed:
+                self.snakeDirection[snakeBody] = self.turnActive[i]
+                self.snakePoints[snakeBody] = self.removeSpace(self.turningPoint[i],snakeBody)
+                self.turnQueue[i] +=1
+                if snakeBody == len(self.snakeDirection)-1:
+                    toRemove.append(i)
+        for i in toRemove:
+            self.turnActive.pop(i)
+            self.turningPoint.pop(i)
+            self.turnQueue.pop(i)
+    def removeSpace(self,coord,ind):
+        if ind == 0:
+            return coord
+        x = coord[0]
+        y = coord[1]
+        if getDist(coord,self.snakePoints[ind-1]) != 100:
+            if self.snakeDirection[ind][0] == 'N' or self.snakeDirection[ind][0] == 'S':
+                y = self.snakePoints[ind-1][1] + directionChange[self.snakeDirection[ind][0]][1]
+            elif self.snakeDirection[ind][0] == 'E' or self.snakeDirection[ind][0] == 'W':
+                x = self.snakePoints[ind-1][0] + directionChange[self.snakeDirection[ind][0]][0]
+        return (x,y)
     def turn(self,dir):
         dir = self.directions[dir]
-        if dir != self.snakeDirection[0][0] and dir[1] != (self.snakeDirection[0][1][0] *-1,self.snakeDirection[0][1][1] *-1):
+        self.reflector()
+        self.resetter()
+        if dir[0] != self.snakeDirection[0][0] and dir[1] != (self.snakeDirection[0][1][0] *-1,self.snakeDirection[0][1][1] *-1):
             booL = 0
             initDir = self.snakeDirection[0][0]
             if initDir == 'S'or initDir == 'E':
@@ -190,6 +212,7 @@ class Snake():
             if self.addTurn(temp):
                 self.turningPoint.append(temp)
                 self.turnActive.append(dir)
+                self.turnQueue.append(0)
     def addTurn(self,coord):
         if len(self.turningPoint) != 0:
             if getDist(self.turningPoint[-1],coord) >= 99:
@@ -200,14 +223,14 @@ class Snake():
             return True
     def addBody(self):
         self.bodyCount+=1
-        self.addSegment()
         self.snakeDirection.append(self.snakeDirection[-1])
+        self.addSegment()
     def move(self,n=0):
         direction = self.snakeDirection[n][1]
         changeX = direction[0] * self.speed
         changeY = direction[1] * self.speed
         self.snakePoints[n] = (self.snakePoints[n][0]+changeX,self.snakePoints[n][1]+ changeY)
-        if  False in self.boundaryChk(self.snakePoints[n]):
+        if  False in self.boundaryChk(self.snakePoints[n],self.snakeDirection[n][0]):
             self.reflectorPoint[n] = (self.reflectorPoint[n][0]+changeX,self.reflectorPoint[n][1]+ changeY)
             # print(self.snakePoints[n],self.reflectorPoint[n],sep='==')
         else:
@@ -220,6 +243,12 @@ class Snake():
         if len(valueCollided)!=0:
             snakeObj.addBody()
             foodObj.respawn(valueCollided[0])
+    def pause(self,value):
+        if value:
+            self.initSpeed = self.speed
+            self.speed= 0
+        else:
+            self.speed = self.initSpeed
 class Food():
     def __init__(self,foodDir):
         self.mFood = pygame.image.load(foodDir + '/M.png')
@@ -230,6 +259,8 @@ class Food():
         self.LfoodCenter  = (-100000,-100000)
         self.foodCoord = self.getPosition([1200,600],50,self.LfoodCenter)
         self.foodCenter = getCenter(self.foodCoord,100)
+        self.paused= 0
+        self.breakPoint = 0
     def getPosition(self,boundary,width,other):
         while True:
             x = random.randrange(0,boundary[0],100)
@@ -265,11 +296,22 @@ class Food():
             self.calculate()
             self.collided = 0
     def calculate(self):
-        percent = (time.perf_counter()-self.start)/5
+        if self.paused:
+            self.stop =self.stop
+        else:
+            self.stop = (time.perf_counter() - self.start) -self.breakPoint
+        percent = (self.stop)/5
         self.degree  = round(360 * percent * 0.0175,1)
         self.rect = [self.LfoodCoord[0],self.LfoodCoord[1],200,200]
         if percent >= 1:
             self.FoodT =False
+    def pause(self,value):
+        if not value and self.FoodT:
+            self.breakPoint += time.perf_counter() - self.initBreak
+        elif self.FoodT:
+            self.initBreak = time.perf_counter()
+        self.paused = value
+
 
 def getCenter(coord,width):
         x = ((2*coord[0]) +width)/2
@@ -299,11 +341,23 @@ def getDist(coord1,coord2):
     x = (coord2[0] - coord1[0])**2
     y = (coord2[1] - coord1[1])**2
     return math.sqrt(x+y)
-
+fpsS = pygame.time.Clock()
 backgroundObj = Background("\Classic")
 snakeObj = Snake()
 foodObj = Food(foodUsed)
+start = time.perf_counter()
+countFrames = 0
+FPS = []
+paused = 0
+def createFPSGraph(frames):
+    second = list(range(1,len(frames)+1))
+    plt.plot(second,frames)
+    plt.xlabel('Seconds')
+    plt.ylabel('Frames')
+    plt.title('Visualization Of FPS')
+    plt.show()
 def runGame():
+    global countFrames,start,FPS,paused
     running=True
     snakeObj.spawn()
     while running:
@@ -311,6 +365,7 @@ def runGame():
         for events_in in pygame.event.get():
             if events_in.type == pygame.QUIT:
                 running = False
+                # createFPSGraph(FPS)
             elif events_in.type == pygame.KEYDOWN:
                 if events_in.key == pygame.K_DOWN:
                     snakeObj.turn(1)
@@ -320,8 +375,19 @@ def runGame():
                     snakeObj.turn(3)
                 elif events_in.key == pygame.K_RIGHT:
                     snakeObj.turn(2)
+                elif events_in.key == pygame.K_ESCAPE:
+                    paused = not paused
+                    snakeObj.pause(paused)
+                    foodObj.pause(paused)
+        countFrames +=1
         snakeObj.mechanics()
         foodObj.mechanics()
         pygame.display.update()
-runGame()
+        fpsS.tick_busy_loop(180)
+        if (time.perf_counter()-start) >= 1:
+            start = time.perf_counter()
+            FPS.append(countFrames)
+            # print(FPS)
+            countFrames =0
 
+runGame()

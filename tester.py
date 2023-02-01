@@ -1,5 +1,5 @@
 import math,time
-stop = (3,4)
+stop = [3,4,5,6,7,8,9,10]
 start = {
     'N' : stop
 }
@@ -8,4 +8,7 @@ start = {
 # for i in range (1,2):
 #     print('MOTHAFUCKA')
 # print(time.perf_counter()-start)
-print(round(0.49,1))
+# for i in range(len(stop)):
+#     stop.pop(i)
+    # pri/nt(stop)
+print(not 0)
