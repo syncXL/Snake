@@ -4,8 +4,11 @@ colors = {
     'darkBlue' : (10,10,34),
     'red' : (236,28,36),
     'white' : (230,227,220),
-    'darkWhite' : (195,195,195)
+    'darkWhite' : (195,195,195),
+    'Violet' : (191,28,229)
 }
+def placeCenter(maxVal,val):
+    return int(maxVal/2 -val/2)
 def getCenter(coord,dist):
         x = ((2 * coord[0])+dist[0])/2
         y = ((2 * coord[1]) + dist[1])/2
@@ -57,6 +60,7 @@ def bfs(points,changeGrid,checkBool,width,height):
                     points.append(newGrid)
                     checkBool[newGrid] =True
 
+
 class Background():
     def __init__(self,dir,width,height,screen):
         self.position = [(0,0)]
@@ -72,20 +76,31 @@ class Background():
             self.screen.blit(self.backgroundImage,i)
 
 class Text():
-    def __init__(self,fStyle,size,text,color,coord,screen):
-        self.fontObj = pygame.font.Font(fStyle,size)
+    def __init__(self,fStyle,text,color,screen,anchor=False,coord = 0):
+        self.fontObj = pygame.font.Font(fStyle[0],fStyle[1])
         self.text = text
         self.textObj = self.fontObj.render(text,False,color[0])
         self.color = color
-        self.coord = coord
-        self.textsize = size
+        self.textsize = fStyle[1]
         self.size = self.textObj.get_size()
         self.screen = screen
-        self.centerPoint= getCenter(self.coord,self.size)
         self.highlighted = False
-    def spawn(self):
+        if coord != 0 and anchor:
+            self.coord = (placeCenter(coord[0],self.size[0]),coord[1])
+        else:
+            self.coord = coord
+        self.anchor = True
+        if coord != 0:
+            self.centerPoint= getCenter(self.coord,self.size)
+    def spawn(self,num=0):
         self.checkHighlight()
-        self.screen.blit(self.textObj,self.coord)
+        if not num:
+            self.screen.blit(self.textObj,self.coord)
+        else:
+            if self.anchor:
+                coord = (placeCenter(num[0],self.size[0]),num[1])
+                self.centerPoint= getCenter(coord,self.size)
+                self.screen.blit(self.textObj,coord)
     def chText(self,newText):
         self.text = newText
         self.border= getCenter(self.coord,self.textObj.get_size())
@@ -95,57 +110,73 @@ class Text():
         else:
             self.textObj = self.fontObj.render(self.text,False,self.color[0])
 class ListText:
-    def __init__(self,textObjs,commands,highlightable):
-        self.textObjs = textObjs
-        self.Htext = list()
-        self.filterHighlight(highlightable)
+    def __init__(self,tStyle,items,color,screen,commands,x,y,padding):
+        self.textObjs = list(map(lambda x:Text(tStyle,x,color,screen,True),items))
+        self.X = x
+        self.Y = []
         self.commands = commands
+        self.calcY(y,padding)
         self.highlightedOne = 0
         self.highlightOne(0)
-        self.entered = None
         self.mode = False
+        self.shortcut = {
+            'sbutton' : [],
+            'action'  : []
+        }
+    def calcY(self,miny,pad):
+        height = self.textObjs[0].size[1]
+        for i in range(len(self.textObjs)):
+            try:
+                self.Y.append(self.Y[-1] + height + pad)
+            except IndexError:
+                self.Y.append(miny +pad)
     def spawn(self):
-        for i in self.textObjs:
-            i.spawn()
-    def filterHighlight(self,values):
-        for i,j in zip(values,self.textObjs):
-            if i:
-                self.Htext.append(j)
+        for i,j in enumerate(self.textObjs):
+            coord = (self.X,self.Y[i])
+            j.spawn(coord)
     def highlightOne(self,ind):
         if ind <0:
+            ind = len(self.textObjs)-1
+        elif ind > len(self.textObjs)-1:
             ind = 0
-        elif ind > len(self.Htext)-1:
-            ind = len(self.Htext)-1
-            
-        self.Htext[ind].highlighted= True
+        self.textObjs[ind].highlighted= True
         self.highlightedOne = ind
-        for i in range(len(self.Htext)):
+        for i in range(len(self.textObjs)):
             if i !=ind:
-                self.Htext[i].highlighted = False
+                self.textObjs[i].highlighted = False
+    def addShortcut(self,control,action):
+        self.shortcut['sbutton'].append(control)
+        self.shortcut['action'].append(action)
     def highlight(self,mpos,vel):
         if vel == (0,0):
             self.mode = True
         else:
             self.mode = False
         if not self.mode:
-            for i,j in enumerate(self.Htext):
+            for i,j in enumerate(self.textObjs):
                 halfPos = (j.size[0]/2,j.size[1]/2)
                 if inRange(mpos,j.centerPoint,halfPos):
                     self.highlightOne(i)
                     break
     def runHighlighted(self):
-        if self.entered != None:
-            self.commands[self.textObjs.index(self.Htext[self.highlightedOne])]()
-            self.entered = None
+        self.commands[self.textObjs.index(self.textObjs[self.highlightedOne])]()
+        self.highlightOne(0)
     def controls(self,events_in):
         keys = [pygame.K_UP,pygame.K_DOWN]
         actions = [-1,1]
-        if events_in.key in keys:
-            self.mode = True
-            self.highlightOne(self.highlightedOne+actions[keys.index(events_in.key)])
-        elif events_in.key == pygame.K_RETURN:
-            self.entered = self.highlightedOne
-
+        if events_in.type == pygame.KEYDOWN:
+            if events_in.key in keys:
+                self.mode = True
+                self.highlightOne(self.highlightedOne+actions[keys.index(events_in.key)])
+            elif events_in.key == pygame.K_RETURN:
+                self.runHighlighted()
+            elif events_in.key in self.shortcut['sbutton']:
+                self.shortcut['action'][self.shortcut['sbutton'].index(events_in.key)]()
+        elif events_in.type == pygame.MOUSEBUTTONUP:
+            self.runHighlighted()
+def spawnALl(items):
+    for x in items:
+        x.spawn()
 
 
 def createFPSGraph(frames):

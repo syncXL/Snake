@@ -1,9 +1,35 @@
-import math,time,pygame
+import json,os
+# import math,time,pygame
 # from classespyg import Text
 # import tkinter
-ll=[1,2,3,4,1,4]
-llrev = ll.reverse
-print(llrev)
+# fat = {
+#     'dd' : 3,
+#     'ee' : 4,
+#     'hl' : 2
+# }
+a= 3
+b= 4
+c =6
+for i in [a,b,c]:
+    i += 7
+print(a)
+# if not os.path.isfile('save.json'):
+#     open('save.json')
+# try:
+#     with open('save.json','r+') as f:
+#         data = json.load(f)
+#         print(data)
+# except FileNotFoundError:
+#     with open('save.json','') as f:
+#         data = json.load(f)
+    # data['dd'] = 10
+    # f.seek(0)
+    # json.dump(data,f,
+    #     indent='\n',
+    #     )
+    # f.truncate()
+# ll.sort(reverse=True)
+# print(llrev)
 # print(llrev.index(1))
 # pygame.init()
 # print(pygame.mouse.get_pos())

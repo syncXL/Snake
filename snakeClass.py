@@ -16,21 +16,36 @@ tailCoord = {
 
 class Snake():
     def __init__(self,screen):
-        self.speed = 4
         self.directions = [('N',(0,-1)),('S',(0,1)),('E',(1,0)),('W',(-1,0))]
-        self.snakeCP = random.choice(self.directions)
+        self.screen = screen
+        self.init1()
+    def init1(self):
+        self.speed = 4
+        initDir = random.choice(self.directions)
         self.point = (random.randrange(300,1000,100),random.randrange(300,500,100))
         self.snakePoints = [self.point]
-        self.snakeDirection = [self.snakeCP for i in range(3)]
+        self.snakeDirection = [initDir for i in range(3)]
         self.reflectorPoint = [self.point]
         self.centerPoints = [(0,0) for i in range(3)]
         self.turningPoint = []
         self.turnActive = []
         self.turnQueue = []
         self.bodyCount = 1
-        self.initSpeed=0
-        self.screen = screen
+        self.initSpeed=self.speed
         self.init2()
+    # def reload(self,speed,coord,):
+    def save(self):
+        return [self.initSpeed,self.snakePoints,self.snakeDirection,self.reflectorPoint,self.centerPoints,self.turningPoint,self.turnActive,self.turnQueue]
+    def load(self,values):
+        self.initSpeed = values[0]
+        self.snakePoints = [tuple(x) for x in values[1]]
+        self.snakeDirection = values[2]
+        self.reflectorPoint = [tuple(x) for x in  values[3]]
+        self.centerPoints = [tuple(x) for x in values[4]]
+        self.turningPoint = [tuple(x) for x in values[5]]
+        self.turnActive = values[6]
+        self.turnQueue = values[7]
+        self.speed = 0
     def init2(self,n=1):
         if n != len(self.snakeDirection):
             self.addSegment()
@@ -184,7 +199,6 @@ class Snake():
             self.move(n)
     def pause(self,value):
         if value:
-            self.initSpeed = self.speed
             self.speed= 0
         else:
             self.speed = self.initSpeed

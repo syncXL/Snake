@@ -5,16 +5,35 @@ class Food():
     def __init__(self,foodDir,screen):
         self.mFood = pygame.image.load(foodDir + '/M.png')
         self.lFood = pygame.image.load(foodDir + '/L.png')
+        self.screen = screen
+        self.init1()
+    def init1(self):
         self.FoodT = False
         self.collided = 0
         self.LfoodCoord = (-1000000,-100000)
         self.LfoodCenter  = (-100000,-100000)
         self.paused= 0
         self.breakPoint = 0
-        self.screen = screen
+        self.initBreak = 0
         self.start = 0
         self.spawned = [False,True]
         self.stop = 0
+        self.quitTimer = 0
+    def save(self):
+        return [self.FoodT,self.collided,self.LfoodCoord,self.LfoodCenter,self.paused,self.spawned,self.stop,self.foodCoord,self.foodCenter]
+    def load(self,values):
+        self.FoodT = values[0]
+        self.collided = values[1]
+        self.LfoodCoord = tuple(values[2])
+        self.LfoodCenter = tuple(values[3])
+        self.paused = values[4]
+        self.spawned = values[5]
+        self.quitTimer = values[6]
+        self.stop = values[6]
+        self.foodCoord = tuple(values[7])
+        self.foodCenter = tuple(values[8])
+        if self.FoodT:
+            self.calculate()
     def getPosition(self,boundary,width,other,secondFood):
         while True:
             x = random.randrange(0,boundary[0],100)
@@ -60,18 +79,19 @@ class Food():
             self.collided = 0
     def calculate(self):
         if self.paused:
-            self.stop =self.stop
+            self.stop = self.stop
         else:
-            self.stop = (time.perf_counter() - self.start) -self.breakPoint
+            self.stop = (time.perf_counter() - self.start) -self.breakPoint +self.quitTimer
         percent = (self.stop)/5
         self.degree  = round(360 * percent * 0.0175,1)
         self.rect = [self.LfoodCoord[0],self.LfoodCoord[1],200,200]
         if percent >= 1:
+            self.quitTimer = 0
             self.breakPoint = 0
             self.FoodT =False
     def pause(self,value):
         if not value and self.FoodT:
             self.breakPoint += time.perf_counter() - self.initBreak
-        elif self.FoodT:
+        elif self.FoodT and not self.paused:
             self.initBreak = time.perf_counter()
         self.paused = value
