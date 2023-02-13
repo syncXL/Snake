@@ -7,7 +7,8 @@ running=True
 fpsS = pygame.time.Clock()
 def quitter():
     global running
-    saveTOJson()
+    if returnValue(3) != 0:
+        saveTOJson()
     running = False
 
 Title = ['C:\WINDOWS\Fonts\\impact.ttf',200]
@@ -16,12 +17,25 @@ details = ['C:\WINDOWS\Fonts\\impact.ttf',60]
 scoreTxt = Text(detailsSmall,str(score),darkBlue,screen,False,(636,0))
 GameOverText = Text(Title,'Game Over',[red,darkWhite],screen,True,(1300,0))
 itemColor = [violet,darkWhite]
-gameOverList = ListText(details,['  New Game ','  Return To Menu  '],itemColor,screen,[lambda : tranState(restart),printer],1300,275,100)
+gameOverList = ListText(details,['  New Game ','  Return To Menu  '],itemColor,screen,[lambda : tranState(restart),lambda : tranState(lambda : checkVal(0),'MainMenu')],1300,275,100)
+
 PauseText = Text(Title,'Paused',[red,darkWhite],screen,True,(1300,0))
 pauseList = ListText(details,['  Resume  ','  Restart  ','  Options  ','  Return To Menu  ','  Quit  '],itemColor,screen,[lambda : tranState(pauser),
-            lambda : tranState(restart),printer,printer,quitter],1300,200,20)
+            lambda : tranState(restart),printer,lambda : tranState(lambda : checkVal(1),'MainMenu'),quitter],1300,200,20)
 pauseList.addShortcut(pygame.K_ESCAPE,lambda : tranState(pauser))
 
+snakeTxt =  Text(Title,'Snake.py',[darkBlue,darkWhite],screen,True,(1300,0))
+mainM = ListText(detailsSmall,['  New Game  ','  Wardrobe  ','  Modes  ','  Options  ','  Exit  '],itemColor,screen,
+        [lambda : tranState(restart,'Start','MainMenu'), printer,printer,printer,quitter],1300,220,20)
+loadSave()
+if continueS():
+    mainM.insertItem(0,'  Continue  ',lambda : tranState(loadFromJson,'Start','MainMenu'))
+def checkVal(state):
+    mainM.removeItem('  Continue  ')
+    if state:
+        assignValue()
+        mainM.insertItem(0,'  Continue  ', lambda : tranState('','Start','MainMenu'))
+# if returnValue(3) != 0:
 
 # SnakeTxt = Text(Title,'Snake',[darkBlue,darkWhite])
 # MainMenuState = dict()
@@ -70,7 +84,7 @@ Options = {
     'Music' : '2',
 }
 StartState = {
-    'background' : mainMBG.display,
+    'background' : backgroundObj.display,
     'SnakeMechanics' : snakeObj.mechanics,
     'FoodMechanics' : lambda : foodObj.mechanics(snakeObj.centerPoints),
     'scoring' : lambda : spawnScore(scoreTxt),
@@ -84,13 +98,9 @@ inheritValues(PauseState,StartState,['background','SnakeMechanics','FoodMechanic
 addListToDict(PauseState,pauseList,PauseText)
 addListToDict(GOState,gameOverList,GameOverText)
 MainMenuState = {
-    'Continue' : '1',
-    'NewGame' : StartState,
-    'WardRobe' : Wardrobe,
-    'Modes': Modes,
-    'Options' : Options,
-    'Exit' : '6'
+    'background' : mainMBG.display
 }
+addListToDict(MainMenuState,mainM,snakeTxt)
 GameState = {
     'MainMenu': MainMenuState,
     'Start' : StartState,
@@ -100,23 +110,18 @@ GameState = {
     'GameOver' : GOState,
     'Pause' :PauseState
 }
-currentState = GameState['Start']
+currentState = GameState['MainMenu']
 
 
 # def runState(state):
 
 def runGame():
     global running
-    loadSave()
-    loadFromJson()
     while running:
         for events_in in pygame.event.get():
             currentState['Controls'](events_in)
-            # if events_in.type == pygame.MOUSEBUTTONDOWN:
-            #     currentState['Controls'](events_in)
             if events_in.type == pygame.QUIT:
-                saveTOJson()
-                running = False
+                quitter()
         for i in currentState.keys():
             if i not in currentState.keys():
                 break

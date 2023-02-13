@@ -30,7 +30,7 @@ mode = 'Classic'
 save = {
     'Snake': list(),
     'Food' : list(),
-    'Others' : list(),
+    'Others' : ['Classic',0],
     'HighScores' : {
         'Classic' : list(),
         'Caged' : list(),
@@ -55,11 +55,9 @@ def loadSave():
     global save
     try:
         with open('save.json','r') as save_file:
-            print('loaded')
             save = json.load(save_file)
     except FileNotFoundError:
         with open('save.json','w') as save_file:
-            print('new')
             json.dump(save,save_file,
             indent= 4)
 def saveTOJson():
@@ -73,19 +71,26 @@ def saveTOJson():
     with open('save.json','w') as save_file:
         json.dump(save,save_file,
         indent=4)
+def continueS():
+    if save['Others'][1] != 0:
+        return 1
+    return 0
 def loadFromJson():
     global save,score,paused
-    if save['Others'][1] != 0:
-        snakeObj.load(save['Snake'])
-        foodObj.load(save['Food'])
-        score = save['Others'][1]
+    snakeObj.load(save['Snake'])
+    foodObj.load(save['Food'])
+    score = save['Others'][1]
         # paused = 1
 def returnValue(desc):
-    if desc:
+    if desc == True:
         return collided
-    else:
+    elif desc == False:
         return paused
-
+    else:
+        return score
+def assignValue():
+    global paused
+    paused = 0
 def collisions():
     global collided
     if snakeObj.boundaryChk(snakeObj.snakePoints[0],snakeObj.snakeDirection[0][0]):
@@ -117,8 +122,7 @@ def controlSnake(events_in):
                 paused = False
                 snakeObj.pause(paused)
                 foodObj.pause(paused)
-            else:
-                snakeObj.turn(controls.index(events_in.key))
+            snakeObj.turn(controls.index(events_in.key))
         elif events_in.key == pygame.K_ESCAPE:
             pauser()
 def printer():

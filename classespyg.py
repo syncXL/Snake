@@ -111,11 +111,16 @@ class Text():
             self.textObj = self.fontObj.render(self.text,False,self.color[0])
 class ListText:
     def __init__(self,tStyle,items,color,screen,commands,x,y,padding):
+        self.tStyle = tStyle
+        self.color = color
+        self.screen = screen
+        self.padding = padding
+        self.minY = y
         self.textObjs = list(map(lambda x:Text(tStyle,x,color,screen,True),items))
         self.X = x
         self.Y = []
         self.commands = commands
-        self.calcY(y,padding)
+        self.calcY(padding,y)
         self.highlightedOne = 0
         self.highlightOne(0)
         self.mode = False
@@ -123,7 +128,7 @@ class ListText:
             'sbutton' : [],
             'action'  : []
         }
-    def calcY(self,miny,pad):
+    def calcY(self,pad,miny):
         height = self.textObjs[0].size[1]
         for i in range(len(self.textObjs)):
             try:
@@ -147,6 +152,23 @@ class ListText:
     def addShortcut(self,control,action):
         self.shortcut['sbutton'].append(control)
         self.shortcut['action'].append(action)
+    def insertItem(self,index,text,command):
+        self.textObjs.insert(index,Text(self.tStyle,text,self.color,self.screen,True))
+        self.commands.insert(0,command)
+        self.highlightOne(0)
+        self.Y.clear()
+        self.calcY(self.padding,self.minY)
+    def removeItem(self,value):
+        allItems = [x.text for x in self.textObjs]
+        try:
+            index = allItems.index(value)
+            self.textObjs.pop(index)
+            self.commands.pop(index)
+            self.highlightOne(0)
+            self.Y.clear()
+            self.calcY(self.padding,self.minY)
+        except ValueError:
+            pass
     def highlight(self,mpos,vel):
         if vel == (0,0):
             self.mode = True

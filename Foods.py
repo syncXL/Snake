@@ -67,6 +67,7 @@ class Food():
             self.LfoodCoord = (-1000000,-100000)
             self.LfoodCenter= (-100000,-100000)
             self.breakPoint = 0
+            self.quitTimer = 0
             self.FoodT =False
             self.spawned[1] = True
         elif num ==0:
