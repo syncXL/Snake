@@ -5,7 +5,9 @@ colors = {
     'red' : (236,28,36),
     'white' : (230,227,220),
     'darkWhite' : (195,195,195),
-    'Violet' : (191,28,229)
+    'Violet' : (191,28,229),
+    'turquoise' : (0,168,243),
+    'blue+' : (51,101,123)
 }
 def placeCenter(maxVal,val):
     return int(maxVal/2 -val/2)
@@ -22,7 +24,9 @@ def detectCollision(mainObj,obj2,minDist):
             if getDist(mainObj,obj2[i])<minDist[0]:
                 return True
     return False
-
+# def dispMultiple(screen,imgs,coords):
+#     for i in range(len(imgs)):
+#         screen.blit()
 def inRange(val,val1,minDist):
     distX = abs(val1[0] - val[0])
     distY = abs(val1[1]-val[1])
@@ -89,18 +93,19 @@ class Text():
             self.coord = (placeCenter(coord[0],self.size[0]),coord[1])
         else:
             self.coord = coord
-        self.anchor = True
+        self.anchor = anchor
         if coord != 0:
             self.centerPoint= getCenter(self.coord,self.size)
     def spawn(self,num=0):
         self.checkHighlight()
         if not num:
             self.screen.blit(self.textObj,self.coord)
+        elif self.anchor and self.coord ==0:
+            coord = (placeCenter(num[0],self.size[0]),num[1])
+            self.centerPoint= getCenter(coord,self.size)
+            self.screen.blit(self.textObj,coord)
         else:
-            if self.anchor:
-                coord = (placeCenter(num[0],self.size[0]),num[1])
-                self.centerPoint= getCenter(coord,self.size)
-                self.screen.blit(self.textObj,coord)
+            self.screen.blit(self.textObj,num)
     def chText(self,newText):
         self.text = newText
         self.border= getCenter(self.coord,self.textObj.get_size())
@@ -110,19 +115,19 @@ class Text():
         else:
             self.textObj = self.fontObj.render(self.text,False,self.color[0])
 class ListText:
-    def __init__(self,tStyle,items,color,screen,commands,x,y,padding):
+    def __init__(self,tStyle,items,color,screen,x,y,padding,commands=[],highlightable= True,anchor=True):
         self.tStyle = tStyle
         self.color = color
         self.screen = screen
         self.padding = padding
         self.minY = y
-        self.textObjs = list(map(lambda x:Text(tStyle,x,color,screen,True),items))
         self.X = x
+        self.textObjs = list(map(lambda x:Text(tStyle,x,color,screen,anchor),items))
         self.Y = []
         self.commands = commands
         self.calcY(padding,y)
-        self.highlightedOne = 0
-        self.highlightOne(0)
+        if highlightable:
+            self.highlightOne(0)
         self.mode = False
         self.shortcut = {
             'sbutton' : [],
@@ -196,6 +201,11 @@ class ListText:
                 self.shortcut['action'][self.shortcut['sbutton'].index(events_in.key)]()
         elif events_in.type == pygame.MOUSEBUTTONUP:
             self.runHighlighted()
+    def chgeText(self,newVal,ind):
+        if ind == 'all':
+            map(lambda x: x.chText(newVal[self.textObjs.index(x)]),self.textObjs)
+        else:
+            self.textObjs[ind].chText(newVal)
 def spawnALl(items):
     for x in items:
         x.spawn()

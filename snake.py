@@ -16,7 +16,6 @@ foodUsed = foodDir + '\Classic'
 mainMDIr = os.path.dirname(__file__) + '\images\\bg2.jpg'
 # pygame.display.set_caption("Snake")
 screen = pygame.display.set_mode((ScreenFeatures["width"],ScreenFeatures["height"]))
-# screenBlur = screen.convert_alpha()
 backgroundObj = Background(backgroundDIr + "\Classic\\backgrounds.jpg",ScreenFeatures["width"],ScreenFeatures["height"],screen)
 mainMBG = Background(mainMDIr,ScreenFeatures["width"],ScreenFeatures["height"],screen)
 snakeObj = Snake(screen)
@@ -34,13 +33,14 @@ save = {
     'HighScores' : {
         'Classic' : list(),
         'Caged' : list(),
-        'HardToGet' : list(),
+        'Hard To Get' : list(),
         'Inverted' : list(),
         'EarthQuake' : list(),
-        'MollyAsFood' : list(),
+        'Molly As Food' : list(),
         'Nightmare' : list(),
     }
 }
+hScoreNavigator = 0
 def calcScore(typeFood,value):
     global score
     if typeFood:
@@ -75,12 +75,17 @@ def continueS():
     if save['Others'][1] != 0:
         return 1
     return 0
+def highScore():
+    global save,mode,score
+    save['HighScores'][mode].append(score)
+    save['HighScores'][mode].sort(reverse = True)
+    if len(save['HighScores'][mode]) > 15:
+        save['HighScores'][mode] = save['HighScores'][mode][:15]
 def loadFromJson():
     global save,score,paused
     snakeObj.load(save['Snake'])
     foodObj.load(save['Food'])
     score = save['Others'][1]
-        # paused = 1
 def returnValue(desc):
     if desc == True:
         return collided
@@ -107,7 +112,6 @@ def collisions():
         snakeObj.addBody()
         foodObj.respawn(valueCollided[0])
         calcScore(valueCollided[0],foodObj.stop)
-    # print(collided)
 def pauser():
     global paused
     paused = not paused
@@ -129,8 +133,30 @@ def printer():
     print('Booo')
 def restart():
     global collided,paused,score
+    highScore()
     score= 0
     collided =0
     paused = 0
     snakeObj.init1()
     foodObj.init1()
+def changeHscore(val = 0):
+    global hScoreNavigator
+    hScoreNavigator += val
+    if hScoreNavigator not in range(0,7):
+        hScoreNavigator = abs(7-abs(hScoreNavigator))
+
+def returnHscore():
+    global hScoreNavigator
+    return hScoreNavigator
+def stylehScores():
+    global hScoreNavigator,save
+    scores = list(save['HighScores'].values())[hScoreNavigator]
+    return list(map(lambda x: str(scores.index(x)+ 1)+ '. ' + str(x),scores)) if len(scores) !=0  else ['No Games Played']
+
+
+def hScoreControls(events_in):
+    if events_in.type == pygame.KEYDOWN:
+        if events_in.key  == pygame.K_LEFT:
+            changeHscore(-1)
+        elif events_in.key == pygame.K_RIGHT:
+            changeHscore(1)
