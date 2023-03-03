@@ -2,27 +2,22 @@ import pygame,random,math
 from classespyg import *
 darkBlue = colors['darkBlue']
 directionChange = {
-    'N' : (0,100),
-    'S' : (0,-100),
-    'E' : (-100,0),
-    'W' : (100,0)
-}
-tailCoord = {
-    'N' : (50,100),
-    'E' : (-100,50),
-    'S' : (50,-100),
-    'W' : (100,50)
+    'N' : (0,50),
+    'S' : (0,-50),
+    'E' : (-50,0),
+    'W' : (50,0)
 }
 
 class Snake():
-    def __init__(self,screen):
+    def __init__(self,screen,reflect,minSpawn,maxSpawn):
         self.directions = [('N',(0,-1)),('S',(0,1)),('E',(1,0)),('W',(-1,0))]
         self.screen = screen
-        self.init1()
-    def init1(self):
+        self.reflectBool = reflect
+        self.init1(minSpawn,maxSpawn)
+    def init1(self,minC,maxC):
         self.speed = 4
         initDir = random.choice(self.directions)
-        self.point = (random.randrange(300,1000,100),random.randrange(300,500,100))
+        self.point = (random.randrange(minC[0],maxC[0],50),random.randrange(minC[1],maxC[1],50))
         self.snakePoints = [self.point]
         self.snakeDirection = [initDir for i in range(3)]
         self.reflectorPoint = [self.point]
@@ -33,7 +28,8 @@ class Snake():
         self.bodyCount = 1
         self.initSpeed=self.speed
         self.init2()
-    # def reload(self,speed,coord,):
+    def changeSpawn(self,minC,maxC):
+        self.init1(minC,maxC)
     def save(self):
         return [self.initSpeed,self.snakePoints,self.snakeDirection,self.reflectorPoint,self.centerPoints,self.turningPoint,self.turnActive,self.turnQueue]
     def load(self,values):
@@ -58,14 +54,14 @@ class Snake():
         self.reflectorPoint.append((X,Y))
         self.centerPoints.append((0,0))
     def head(self,coorD):
-        pygame.draw.ellipse(self.screen,darkBlue,[coorD[0],coorD[1],100,100])
-        self.centerPoints[0] = getCenter(coorD,[100,100])
+        pygame.draw.ellipse(self.screen,darkBlue,[coorD[0],coorD[1],50,50])
+        self.centerPoints[0] = getCenter(coorD,[50,50])
     def body(self,coorD):
-        rect = pygame.Rect(coorD[0],coorD[1],100,100)
-        pygame.draw.rect(self.screen,darkBlue,rect)
+        rect = pygame.Rect(coorD[0],coorD[1],50,50)
+        pygame.draw.rect(self.screen,darkBlue,rect,border_radius=10)
     def spawn(self,n = 0):
         self.draw_shapes(n,self.snakePoints)
-        if False in self.boundaryChk(self.snakePoints[n],self.snakeDirection[n][0]):
+        if False in self.boundaryChk(self.snakePoints[n],self.snakeDirection[n][0]) and self.reflectBool:
             self.draw_shapes(n,self.reflectorPoint)
         n+=1
         if n!=len(self.snakePoints):
@@ -73,8 +69,9 @@ class Snake():
     def mechanics(self):
         self.spawn()
         if self.speed != 0:
-            self.reflector()
-            self.resetter()
+            if self.reflectBool:
+                self.reflector()
+                self.resetter()
             self.turnRest()
             self.move()
     def draw_shapes(self,n,CoordList):
@@ -83,11 +80,11 @@ class Snake():
         else:
             self.body(CoordList[n])
             self.centerPoints[n] = getCenter(self.snakePoints[n],[100,100])
-    def boundaryChk(self,coOrd,dir):
+    def boundaryChk(self,coOrd,dir,minC = (0,0),maxC = (1250,650)):
         boundaryBool = [True,True]
-        if (coOrd[0] < 0 and dir == 'W') or (coOrd[0] >= 1200 and dir == 'E'):
+        if (coOrd[0] < minC[0] and dir == 'W') or (coOrd[0] >= maxC[0] and dir == 'E'):
             boundaryBool[0]=False
-        elif (coOrd[1] <0 and dir == 'N') or (coOrd[1]>=600 and dir== 'S'):
+        elif (coOrd[1] < minC[1] and dir == 'N') or (coOrd[1]>=maxC[1] and dir== 'S'):
             boundaryBool[1]=False
         return boundaryBool
     def reflect(self,coOrd,boundary):
@@ -109,22 +106,22 @@ class Snake():
         if n != len(self.snakePoints):
             self.reflector(n)
     def resetter(self,n=0):
-        if self.snakePoints[n][0] <= -100 or self.snakePoints[n][0] >= 1300:
+        if self.snakePoints[n][0] <= -50 or self.snakePoints[n][0] >= 1300:
             self.snakePoints[n] = self.reflectorPoint[n]
-        elif self.snakePoints[n][1] <= -100 or self.snakePoints[n][1] >= 700:
+        elif self.snakePoints[n][1] <= -50 or self.snakePoints[n][1] >= 700:
             self.snakePoints[n] = self.reflectorPoint[n]
         n+=1
         if n!= len(self.snakePoints):
             self.resetter(n)
     def chDirection(self,dir,booL):
         if dir == 'N' or dir == 'S':
-            vAxis = self.getTurnedPoint(self.snakePoints[0][1]/100,booL) *100
+            vAxis = self.getTurnedPoint(self.snakePoints[0][1]/50,booL) *50
             if vAxis >=600 or vAxis <0:
-                vAxis = self.getTurnedPoint(self.reflectorPoint[0][1]/100,booL)*100
+                vAxis = self.getTurnedPoint(self.reflectorPoint[0][1]/50,booL)*50
         else:
-            vAxis = self.getTurnedPoint(self.snakePoints[0][0]/100,booL) *100
+            vAxis = self.getTurnedPoint(self.snakePoints[0][0]/50,booL) *50
             if vAxis >=1200 or vAxis<0:
-                vAxis = self.getTurnedPoint(self.reflectorPoint[0][0]/100,booL) *100
+                vAxis = self.getTurnedPoint(self.reflectorPoint[0][0]/50,booL) *50
         return vAxis
     def getTurnedPoint(self,value,booL):
         if booL:
@@ -150,7 +147,7 @@ class Snake():
             return coord
         x = coord[0]
         y = coord[1]
-        if getDist(coord,self.snakePoints[ind-1]) != 100:
+        if getDist(coord,self.snakePoints[ind-1]) != 50:
             if self.snakeDirection[ind][0] == 'N' or self.snakeDirection[ind][0] == 'S':
                 y = self.snakePoints[ind-1][1] + directionChange[self.snakeDirection[ind][0]][1]
             elif self.snakeDirection[ind][0] == 'E' or self.snakeDirection[ind][0] == 'W':
@@ -175,7 +172,7 @@ class Snake():
                 self.turnQueue.append(0)
     def addTurn(self,coord):
         if len(self.turningPoint) != 0:
-            if getDist(self.turningPoint[-1],coord) >= 99:
+            if getDist(self.turningPoint[-1],coord) >= 49:
                 return True
             else:
                 return False

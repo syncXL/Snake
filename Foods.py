@@ -2,10 +2,12 @@ import pygame,random,time
 from classespyg import *
 white = colors['white']
 class Food():
-    def __init__(self,foodDir,screen):
-        self.mFood = pygame.image.load(foodDir + '/M.png')
-        self.lFood = pygame.image.load(foodDir + '/L.png')
+    def __init__(self,foodDir,screen,smallFoodBoundary = [0,1250,650],lFoodBoundary = [0,1225,525]):
+        self.mFood = pygame.transform.scale(pygame.image.load(foodDir + '/M.png'),(50,50))
+        self.lFood = pygame.transform.scale(pygame.image.load(foodDir + '/L.png'),(100,100))
         self.screen = screen
+        self.smallBoundary = smallFoodBoundary
+        self.largeBoundary = lFoodBoundary
         self.init1()
     def init1(self):
         self.FoodT = False
@@ -36,10 +38,11 @@ class Food():
             self.calculate()
     def getPosition(self,boundary,width,other,secondFood):
         while True:
-            x = random.randrange(0,boundary[0],100)
-            y = random.randrange(0,boundary[1],100)
+            x = random.randrange(boundary[0],boundary[1],50)
+            y = random.randrange(boundary[0],boundary[2],50)
             center = getCenter((x,y),[width*2,width*2])
-            if detectCollision(center,other+[secondFood],[width+50]):
+            otherSize = width + (width*2 if width == 25 else width/2)
+            if detectCollision(center,other+[secondFood],[otherSize]):
                 continue
             else:
                 break
@@ -53,12 +56,12 @@ class Food():
         self.screen.blit(self.mFood,(self.foodCoord))
     def mechanics(self,occupiedPoint):
         if not self.spawned[0]:
-            self.foodCoord = self.getPosition([1200,600],50,occupiedPoint,self.LfoodCenter)
-            self.foodCenter = getCenter(self.foodCoord,[100,100])
+            self.foodCoord = self.getPosition(self.smallBoundary,25,occupiedPoint,self.LfoodCenter)
+            self.foodCenter = getCenter(self.foodCoord,[50,50])
             self.spawned[0] = True
         if not self.spawned[1] and self.FoodT:
-                self.LfoodCoord = self.getPosition([1100,500],100,occupiedPoint,self.foodCenter)
-                self.LfoodCenter = getCenter(self.LfoodCoord,[200,200])
+                self.LfoodCoord = self.getPosition(self.largeBoundary,50,occupiedPoint,self.foodCenter)
+                self.LfoodCenter = getCenter(self.LfoodCoord,[100,100])
                 self.spawned[1] = True
                 self.calculate()
         self.spawn()
@@ -85,7 +88,7 @@ class Food():
             self.stop = (time.perf_counter() - self.start) -self.breakPoint +self.quitTimer
         percent = (self.stop)/5
         self.degree  = round(360 * percent * 0.0175,1)
-        self.rect = [self.LfoodCoord[0],self.LfoodCoord[1],200,200]
+        self.rect = [self.LfoodCoord[0],self.LfoodCoord[1],100,100]
         if percent >= 1:
             self.quitTimer = 0
             self.breakPoint = 0

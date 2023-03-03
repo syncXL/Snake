@@ -14,18 +14,19 @@ foodDir = ".\images\Foods"
 snakeDir = ".\images\SnakeSkins"
 foodUsed = foodDir + '\Classic'
 mainMDIr = os.path.dirname(__file__) + '\images\\bg2.jpg'
-# pygame.display.set_caption("Snake")
 screen = pygame.display.set_mode((ScreenFeatures["width"],ScreenFeatures["height"]))
 backgroundObj = Background(backgroundDIr + "\Classic\\backgrounds.jpg",ScreenFeatures["width"],ScreenFeatures["height"],screen)
+backgroundObj.showoutline()
 mainMBG = Background(mainMDIr,ScreenFeatures["width"],ScreenFeatures["height"],screen)
-snakeObj = Snake(screen)
-foodObj = Food(foodUsed,screen)
+minSpawn = (300,300)
+maxSpawn = (1000,500)
+snakeObj = Snake(screen,False,minSpawn,maxSpawn)
+foodObj = Food(foodUsed,screen,[50,1200,600],[50,1175,475])
 paused = 0
 collided = 0
-sfxV = 0
-musicV = 0
 score = 0
-mode = 'Classic'
+ALLmodes = ['Classic','Caged','Hard To Get','Inverted','Earthquake','Molly As Food','Nightmare']
+mode = 1
 save = {
     'Snake': list(),
     'Food' : list(),
@@ -61,13 +62,14 @@ def loadSave():
             json.dump(save,save_file,
             indent= 4)
 def saveTOJson():
-    global save,score,mode,collided
+    global save,score,mode,collided,ALLmodes
+    modetosave = ALLmodes[mode]
     if not collided:
         save['Food'] = foodObj.save()
         save['Snake'] = snakeObj.save()
-        save['Others'] = [mode,score]
+        save['Others'] = [modetosave,score]
     else:
-        save['Others'] = [mode,0]
+        save['Others'] = [modetosave,0]
     with open('save.json','w') as save_file:
         json.dump(save,save_file,
         indent=4)
@@ -76,11 +78,13 @@ def continueS():
         return 1
     return 0
 def highScore():
-    global save,mode,score
-    save['HighScores'][mode].append(score)
-    save['HighScores'][mode].sort(reverse = True)
-    if len(save['HighScores'][mode]) > 15:
-        save['HighScores'][mode] = save['HighScores'][mode][:15]
+    global save,mode,score,ALLmodes
+    modetype = ALLmodes[mode]
+    save['HighScores'][modetype].append(score)
+    save['HighScores'][modetype].sort(reverse = True)
+    if len(save[ 'HighScores'][modetype]) > 15:
+        save['HighScores'][modetype] = save['HighScores'][modetype][:15]
+    score= 0
 def loadFromJson():
     global save,score,paused
     snakeObj.load(save['Snake'])
@@ -97,21 +101,26 @@ def assignValue():
     global paused
     paused = 0
 def collisions():
-    global collided
-    if snakeObj.boundaryChk(snakeObj.snakePoints[0],snakeObj.snakeDirection[0][0]):
-        if detectCollision(snakeObj.reflectorPoint[0],snakeObj.snakePoints[2:len(snakeObj.snakePoints)+1],[100]):
-            snakeObj.pause(1)
-            foodObj.pause(1)
-            collided = 1
-    elif detectCollision(snakeObj.snakePoints[0],snakeObj.snakePoints[2:len(snakeObj.snakePoints)+1],[100]):
-        snakeObj.pause(1)
-        foodObj.pause(1)
-        collided = 1
-    valueCollided = returnCollided(snakeObj.centerPoints[0],[foodObj.foodCenter,foodObj.LfoodCenter],[100,150])
+    global collided,mode
+    if snakeObj.boundaryChk(snakeObj.snakePoints[0],snakeObj.snakeDirection[0][0]) and mode not in [1,6]:
+        if detectCollision(snakeObj.reflectorPoint[0],snakeObj.snakePoints[2:len(snakeObj.snakePoints)+1],[49]):
+            gOver()
+    elif detectCollision(snakeObj.snakePoints[0],snakeObj.snakePoints[2:len(snakeObj.snakePoints)+1],[49]):
+        gOver()
+    elif mode in [1,6]:
+        if False in snakeObj.boundaryChk(snakeObj.snakePoints[0],snakeObj.snakeDirection[0][0],(49,49),(1201,601)):
+            print('over')
+            gOver()
+    valueCollided = returnCollided(snakeObj.centerPoints[0],[foodObj.foodCenter,foodObj.LfoodCenter],[50,75])
     if len(valueCollided)!=0:
         snakeObj.addBody()
         foodObj.respawn(valueCollided[0])
         calcScore(valueCollided[0],foodObj.stop)
+def gOver():
+    global collided
+    snakeObj.pause(1)
+    foodObj.pause(1)
+    collided = 1
 def pauser():
     global paused
     paused = not paused
@@ -132,12 +141,12 @@ def controlSnake(events_in):
 def printer():
     print('Booo')
 def restart():
-    global collided,paused,score
-    highScore()
-    score= 0
+    global collided,paused,score,minSpawn,maxSpawn
+    if score !=0:
+        highScore()
     collided =0
     paused = 0
-    snakeObj.init1()
+    snakeObj.init1(minSpawn,maxSpawn)
     foodObj.init1()
 def changeHscore(val = 0):
     global hScoreNavigator

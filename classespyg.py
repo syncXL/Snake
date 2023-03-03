@@ -74,10 +74,16 @@ class Background():
         self.backgroundImage = pygame.image.load(dir)
         self.objSize = self.backgroundImage.get_size()
         bfs(self.position,self.objSize,self.visited,width,height)
+        self.outline = pygame.Rect(0,0,width,height)
+        self.outlineBool = False
         self.screen = screen
     def display(self):
         for i in self.position:
             self.screen.blit(self.backgroundImage,i)
+        if self.outlineBool:
+            pygame.draw.rect(self.screen,colors['red'],self.outline,50)
+    def showoutline(self):
+        self.outlineBool = not self.outlineBool
 
 class Text():
     def __init__(self,fStyle,text,color,screen,anchor=False,coord = 0):
