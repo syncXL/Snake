@@ -1,7 +1,8 @@
 import math
-i = math.ceil()
-print(round(i,-2))
-FS = " "
+# i = math.ceil()
+s= [1,2,3,4]
+print([5 *6])
+# FS = " "
 # if 1 in range(1,10,5):
 #     print(i)
 # if i not in range(0,7):

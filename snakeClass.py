@@ -1,23 +1,24 @@
 import pygame,random,math
 from classespyg import *
 darkBlue = colors['darkBlue']
-directionChange = {
-    'N' : (0,50),
-    'S' : (0,-50),
-    'E' : (-50,0),
-    'W' : (50,0)
-}
 
 class Snake():
-    def __init__(self,screen,reflect,minSpawn,maxSpawn):
+    def __init__(self,screen,gSize,reflect,minSpawn,maxSpawn):
         self.directions = [('N',(0,-1)),('S',(0,1)),('E',(1,0)),('W',(-1,0))]
         self.screen = screen
         self.reflectBool = reflect
+        self.directionChange = {
+            'N' : (0,gSize),
+            'S' : (0,-gSize),
+            'E' : (-gSize,0),
+            'W' : (gSize,0)
+        }
+        self.gridSize = gSize
         self.init1(minSpawn,maxSpawn)
     def init1(self,minC,maxC):
         self.speed = 4
         initDir = random.choice(self.directions)
-        self.point = (random.randrange(minC[0],maxC[0],50),random.randrange(minC[1],maxC[1],50))
+        self.point = (random.randrange(minC[0],maxC[0],self.gridSize),random.randrange(minC[1],maxC[1],self.gridSize))
         self.snakePoints = [self.point]
         self.snakeDirection = [initDir for i in range(3)]
         self.reflectorPoint = [self.point]
@@ -48,16 +49,16 @@ class Snake():
             n+=1
             self.init2(n)
     def addSegment(self):
-        X = self.snakePoints[-1][0]+directionChange[self.snakeDirection[-1][0]][0]
-        Y = self.snakePoints[-1][1]+directionChange[self.snakeDirection[-1][0]][1]
+        X = self.snakePoints[-1][0]+self.directionChange[self.snakeDirection[-1][0]][0]
+        Y = self.snakePoints[-1][1]+self.directionChange[self.snakeDirection[-1][0]][1]
         self.snakePoints.append((X,Y))
         self.reflectorPoint.append((X,Y))
         self.centerPoints.append((0,0))
     def head(self,coorD):
-        pygame.draw.ellipse(self.screen,darkBlue,[coorD[0],coorD[1],50,50])
-        self.centerPoints[0] = getCenter(coorD,[50,50])
+        pygame.draw.ellipse(self.screen,darkBlue,[coorD[0],coorD[1],self.gridSize,self.gridSize])
+        self.centerPoints[0] = getCenter(coorD,[self.gridSize,self.gridSize])
     def body(self,coorD):
-        rect = pygame.Rect(coorD[0],coorD[1],50,50)
+        rect = pygame.Rect(coorD[0],coorD[1],self.gridSize,self.gridSize)
         pygame.draw.rect(self.screen,darkBlue,rect,border_radius=10)
     def spawn(self,n = 0):
         self.draw_shapes(n,self.snakePoints)
@@ -79,8 +80,9 @@ class Snake():
             self.head(CoordList[n])
         else:
             self.body(CoordList[n])
-            self.centerPoints[n] = getCenter(self.snakePoints[n],[100,100])
-    def boundaryChk(self,coOrd,dir,minC = (0,0),maxC = (1250,650)):
+            self.centerPoints[n] = getCenter(self.snakePoints[n],[self.gridSize,self.gridSize])
+    def boundaryChk(self,coOrd,dir,minC = (0,0),maxC = 0):
+        maxC = (1300 - self.gridSize,700 -self.gridSize) if not maxC else maxC
         boundaryBool = [True,True]
         if (coOrd[0] < minC[0] and dir == 'W') or (coOrd[0] >= maxC[0] and dir == 'E'):
             boundaryBool[0]=False
@@ -106,22 +108,22 @@ class Snake():
         if n != len(self.snakePoints):
             self.reflector(n)
     def resetter(self,n=0):
-        if self.snakePoints[n][0] <= -50 or self.snakePoints[n][0] >= 1300:
+        if self.snakePoints[n][0] <= -self.gridSize or self.snakePoints[n][0] >= 1300:
             self.snakePoints[n] = self.reflectorPoint[n]
-        elif self.snakePoints[n][1] <= -50 or self.snakePoints[n][1] >= 700:
+        elif self.snakePoints[n][1] <= -self.gridSize or self.snakePoints[n][1] >= 700:
             self.snakePoints[n] = self.reflectorPoint[n]
         n+=1
         if n!= len(self.snakePoints):
             self.resetter(n)
     def chDirection(self,dir,booL):
         if dir == 'N' or dir == 'S':
-            vAxis = self.getTurnedPoint(self.snakePoints[0][1]/50,booL) *50
+            vAxis = self.getTurnedPoint(self.snakePoints[0][1]/self.gridSize,booL) *self.gridSize
             if vAxis >=600 or vAxis <0:
-                vAxis = self.getTurnedPoint(self.reflectorPoint[0][1]/50,booL)*50
+                vAxis = self.getTurnedPoint(self.reflectorPoint[0][1]/self.gridSize,booL)*self.gridSize
         else:
-            vAxis = self.getTurnedPoint(self.snakePoints[0][0]/50,booL) *50
+            vAxis = self.getTurnedPoint(self.snakePoints[0][0]/self.gridSize,booL) *self.gridSize
             if vAxis >=1200 or vAxis<0:
-                vAxis = self.getTurnedPoint(self.reflectorPoint[0][0]/50,booL) *50
+                vAxis = self.getTurnedPoint(self.reflectorPoint[0][0]/self.gridSize,booL) *self.gridSize
         return vAxis
     def getTurnedPoint(self,value,booL):
         if booL:
@@ -147,11 +149,11 @@ class Snake():
             return coord
         x = coord[0]
         y = coord[1]
-        if getDist(coord,self.snakePoints[ind-1]) != 50:
+        if getDist(coord,self.snakePoints[ind-1]) != self.gridSize:
             if self.snakeDirection[ind][0] == 'N' or self.snakeDirection[ind][0] == 'S':
-                y = self.snakePoints[ind-1][1] + directionChange[self.snakeDirection[ind][0]][1]
+                y = self.snakePoints[ind-1][1] + self.directionChange[self.snakeDirection[ind][0]][1]
             elif self.snakeDirection[ind][0] == 'E' or self.snakeDirection[ind][0] == 'W':
-                x = self.snakePoints[ind-1][0] + directionChange[self.snakeDirection[ind][0]][0]
+                x = self.snakePoints[ind-1][0] + self.directionChange[self.snakeDirection[ind][0]][0]
         return (x,y)
     def turn(self,dir):
         dir = self.directions[dir]
@@ -172,7 +174,7 @@ class Snake():
                 self.turnQueue.append(0)
     def addTurn(self,coord):
         if len(self.turningPoint) != 0:
-            if getDist(self.turningPoint[-1],coord) >= 49:
+            if getDist(self.turningPoint[-1],coord) >= self.gridSize-1:
                 return True
             else:
                 return False

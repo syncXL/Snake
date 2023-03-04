@@ -13,20 +13,33 @@ backgroundDIr = os.path.dirname(__file__) + "\images\BackGrounds"
 foodDir = ".\images\Foods"
 snakeDir = ".\images\SnakeSkins"
 foodUsed = foodDir + '\Classic'
+gridSize = 50
 mainMDIr = os.path.dirname(__file__) + '\images\\bg2.jpg'
 screen = pygame.display.set_mode((ScreenFeatures["width"],ScreenFeatures["height"]))
-backgroundObj = Background(backgroundDIr + "\Classic\\backgrounds.jpg",ScreenFeatures["width"],ScreenFeatures["height"],screen)
-backgroundObj.showoutline()
+backgroundObj = Background(backgroundDIr + "\Classic\\backgrounds.jpg",ScreenFeatures["width"],ScreenFeatures["height"],screen,gridSize)
 mainMBG = Background(mainMDIr,ScreenFeatures["width"],ScreenFeatures["height"],screen)
-minSpawn = (300,300)
-maxSpawn = (1000,500)
-snakeObj = Snake(screen,False,minSpawn,maxSpawn)
-foodObj = Food(foodUsed,screen,[50,1200,600],[50,1175,475])
+minSpawn = (gridSize*3+50,gridSize*3+50)
+maxSpawn = (1300 - gridSize*3 +50,700 - gridSize*3+50)
+snakeObj = Snake(screen,gridSize,True,minSpawn,maxSpawn)
+foodObj = Food(foodUsed,screen,gridSize)
 paused = 0
 collided = 0
 score = 0
-ALLmodes = ['Classic','Caged','Hard To Get','Inverted','Earthquake','Molly As Food','Nightmare']
-mode = 1
+AllModes = ['Classic','Caged','Hard To Get','Inverted','Earthquake','Molly As Food','Nightmare']
+def toCagedMode():
+    global backgroundObj,snakeObj,foodObj
+    backgroundObj.showoutline()
+    snakeObj.reflectBool =False
+    foodObj.addBoundary(gridSize)
+def toClassicMode():
+    global backgroundObj,snakeObj,foodObj
+    backgroundObj.showoutline()
+    snakeObj.reflectBool =True
+    foodObj.removeBoundary()
+def printer():
+    print('Booo')
+transMode = [toClassicMode,toCagedMode,printer,printer,printer,printer,printer]
+mode = 0
 save = {
     'Snake': list(),
     'Food' : list(),
@@ -62,8 +75,8 @@ def loadSave():
             json.dump(save,save_file,
             indent= 4)
 def saveTOJson():
-    global save,score,mode,collided,ALLmodes
-    modetosave = ALLmodes[mode]
+    global save,score,mode,collided,AllModes
+    modetosave = AllModes[mode]
     if not collided:
         save['Food'] = foodObj.save()
         save['Snake'] = snakeObj.save()
@@ -78,18 +91,20 @@ def continueS():
         return 1
     return 0
 def highScore():
-    global save,mode,score,ALLmodes
-    modetype = ALLmodes[mode]
-    save['HighScores'][modetype].append(score)
-    save['HighScores'][modetype].sort(reverse = True)
-    if len(save[ 'HighScores'][modetype]) > 15:
-        save['HighScores'][modetype] = save['HighScores'][modetype][:15]
-    score= 0
+    global save,mode,score,AllModes
+    if score !=0:
+        modetype = AllModes[mode]
+        save['HighScores'][modetype].append(score)
+        save['HighScores'][modetype].sort(reverse = True)
+        if len(save[ 'HighScores'][modetype]) > 15:
+            save['HighScores'][modetype] = save['HighScores'][modetype][:15]
+        score= 0
 def loadFromJson():
-    global save,score,paused
+    global save,score,paused,mode
     snakeObj.load(save['Snake'])
     foodObj.load(save['Food'])
     score = save['Others'][1]
+    mode = AllModes.index(save['Others'][0])
 def returnValue(desc):
     if desc == True:
         return collided
@@ -101,17 +116,16 @@ def assignValue():
     global paused
     paused = 0
 def collisions():
-    global collided,mode
+    global collided,mode,gridSize
     if snakeObj.boundaryChk(snakeObj.snakePoints[0],snakeObj.snakeDirection[0][0]) and mode not in [1,6]:
-        if detectCollision(snakeObj.reflectorPoint[0],snakeObj.snakePoints[2:len(snakeObj.snakePoints)+1],[49]):
+        if detectCollision(snakeObj.reflectorPoint[0],snakeObj.snakePoints[2:len(snakeObj.snakePoints)+1],[gridSize-1]):
             gOver()
-    elif detectCollision(snakeObj.snakePoints[0],snakeObj.snakePoints[2:len(snakeObj.snakePoints)+1],[49]):
+    elif detectCollision(snakeObj.snakePoints[0],snakeObj.snakePoints[2:len(snakeObj.snakePoints)+1],[gridSize-1]):
         gOver()
     elif mode in [1,6]:
-        if False in snakeObj.boundaryChk(snakeObj.snakePoints[0],snakeObj.snakeDirection[0][0],(49,49),(1201,601)):
-            print('over')
+        if False in snakeObj.boundaryChk(snakeObj.snakePoints[0],snakeObj.snakeDirection[0][0],(gridSize,gridSize),(1300 - (gridSize*2) +snakeObj.speed,700 - (gridSize*2) +snakeObj.speed)):
             gOver()
-    valueCollided = returnCollided(snakeObj.centerPoints[0],[foodObj.foodCenter,foodObj.LfoodCenter],[50,75])
+    valueCollided = returnCollided(snakeObj.centerPoints[0],[foodObj.foodCenter,foodObj.LfoodCenter],[gridSize,gridSize + (gridSize/2)])
     if len(valueCollided)!=0:
         snakeObj.addBody()
         foodObj.respawn(valueCollided[0])
@@ -138,12 +152,9 @@ def controlSnake(events_in):
             snakeObj.turn(controls.index(events_in.key))
         elif events_in.key == pygame.K_ESCAPE:
             pauser()
-def printer():
-    print('Booo')
 def restart():
     global collided,paused,score,minSpawn,maxSpawn
-    if score !=0:
-        highScore()
+    highScore()
     collided =0
     paused = 0
     snakeObj.init1(minSpawn,maxSpawn)
@@ -160,8 +171,7 @@ def returnHscore():
 def stylehScores():
     global hScoreNavigator,save
     scores = list(save['HighScores'].values())[hScoreNavigator]
-    return list(map(lambda x: str(scores.index(x)+ 1)+ '. ' + str(x),scores)) if len(scores) !=0  else ['No Games Played']
-
+    return list(map(lambda x: str(x[0]+1)+ '. ' + str(x[1]),list(enumerate(scores)))) if len(scores) !=0  else ['No Games Played']
 
 def hScoreControls(events_in):
     if events_in.type == pygame.KEYDOWN:
@@ -169,3 +179,14 @@ def hScoreControls(events_in):
             changeHscore(-1)
         elif events_in.key == pygame.K_RIGHT:
             changeHscore(1)
+
+def chMode(ind):
+    global mode,transMode
+    if mode != ind:
+        mode = ind
+        transMode[ind]()
+
+
+def returnMode():
+    global mode
+    return AllModes[mode]

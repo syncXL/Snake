@@ -66,7 +66,7 @@ def bfs(points,changeGrid,checkBool,width,height):
 
 
 class Background():
-    def __init__(self,dir,width,height,screen):
+    def __init__(self,dir,width,height,screen,outlineThickness=10):
         self.position = [(0,0)]
         self.visited = {
             (0,0) : True
@@ -76,12 +76,13 @@ class Background():
         bfs(self.position,self.objSize,self.visited,width,height)
         self.outline = pygame.Rect(0,0,width,height)
         self.outlineBool = False
+        self.outlineThickness = outlineThickness
         self.screen = screen
     def display(self):
         for i in self.position:
             self.screen.blit(self.backgroundImage,i)
         if self.outlineBool:
-            pygame.draw.rect(self.screen,colors['red'],self.outline,50)
+            pygame.draw.rect(self.screen,colors['red'],self.outline,self.outlineThickness)
     def showoutline(self):
         self.outlineBool = not self.outlineBool
 
@@ -89,13 +90,14 @@ class Text():
     def __init__(self,fStyle,text,color,screen,anchor=False,coord = 0):
         self.fontObj = pygame.font.Font(fStyle[0],fStyle[1])
         self.text = text
-        self.textObj = self.fontObj.render(text,False,color[0])
+        self.textObj = self.fontObj.render(self.text,False,color[0])
         self.color = color
         self.textsize = fStyle[1]
         self.size = self.textObj.get_size()
         self.screen = screen
         self.highlighted = False
         if coord != 0 and anchor:
+            self.initCoord = coord
             self.coord = (placeCenter(coord[0],self.size[0]),coord[1])
         else:
             self.coord = coord
@@ -111,10 +113,16 @@ class Text():
             self.centerPoint= getCenter(coord,self.size)
             self.screen.blit(self.textObj,coord)
         else:
+            self.centerPoint= getCenter(num,self.size)
             self.screen.blit(self.textObj,num)
     def chText(self,newText):
         self.text = newText
+        self.textObj = self.fontObj.render(self.text,False,self.color[0])
         self.border= getCenter(self.coord,self.textObj.get_size())
+        if self.anchor:
+            self.size = self.textObj.get_size()
+            self.coord = (placeCenter(self.initCoord[0],self.size[0]),self.coord[1])
+
     def checkHighlight(self):
         if self.highlighted:
             self.textObj = self.fontObj.render(self.text,False,self.color[0],self.color[1])
@@ -131,6 +139,7 @@ class ListText:
         self.textObjs = list(map(lambda x:Text(tStyle,x,color,screen,anchor),items))
         self.Y = []
         self.commands = commands
+        self.resetH = True
         self.calcY(padding,y)
         if highlightable:
             self.highlightOne(0)
@@ -193,7 +202,8 @@ class ListText:
                     break
     def runHighlighted(self):
         self.commands[self.textObjs.index(self.textObjs[self.highlightedOne])]()
-        self.highlightOne(0)
+        if self.resetH:
+            self.highlightOne(0)
     def controls(self,events_in):
         keys = [pygame.K_UP,pygame.K_DOWN]
         actions = [-1,1]
